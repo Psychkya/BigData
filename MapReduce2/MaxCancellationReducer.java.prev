@@ -1,0 +1,54 @@
+package BigData.MaxCancellation;
+import java.io.IOException;
+import java.util.*;
+
+import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.Reducer.Context;
+import org.apache.hadoop.io.*;
+
+public class MaxCancellationReducer extends
+Reducer<Text, Text, Text, Text> {
+	public void reduce(Text key, Iterable<Text> values, Context context)
+		      throws IOException, InterruptedException {
+		    int sum = 0;
+		    int max = 0;
+		    String maxVal = ""; //Will contain the route (orig/dest) with max number of cancellation
+		    String prevRoute = ""; //temporary variable to store previous route for comparison
+		    /*
+		     * The values are not sorted. To sort, Iterable<T> is converted to an ArrayList
+		     * and the sort method from Collections is used to sort
+		     */
+		    List<String> valList = new ArrayList <String> ();
+		    for (Text value: values){
+		    	valList.add(value.toString());
+		    }
+		    Collections.sort(valList);
+		    //end of sorting
+		    
+		    /*
+		     * Iterate through the Arraylist to sum up cancellations for each route and determine
+		     * maximum cancellations
+		     */
+		    for (String value : valList) {
+		    	if (value.equals(prevRoute)) {
+		    		sum++;
+		    	} else {
+		    		if (sum > max){
+		    			max = sum;
+		    			maxVal = prevRoute + "\t" + Integer.toString(max);
+		    		}
+		    		sum = 1;
+		    		prevRoute = value;
+		    	}
+		    	
+		    }
+		    //Following lines will determine max after the last value has been read for the key
+		    if (sum > max) {
+		    	max = sum;
+		    	maxVal = prevRoute + "\t" + Integer.toString(max);
+		    }
+		    //Write the key to output
+		    context.write(key, new Text(maxVal));
+		  }
+
+}
